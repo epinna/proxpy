@@ -34,13 +34,14 @@ Syntax: python %s <options>
  -h                show this help screen
  -p <port>         listen port
  -r <host:[port]>  redirect HTTP traffic to target host (default port: 80)
+ -t                pass-through ssl-raw tunnel
  -v                be more verbose
  -x <filename>     load a ProxPy plugin
 """ % sys.argv[0]
 
 def parse_options():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:hp:r:vx:")
+        opts, args = getopt.getopt(sys.argv[1:], "d:hp:r:vtx:")
     except getopt.GetoptError, e:
         print str(e)
         show_help()
@@ -53,6 +54,11 @@ def parse_options():
         exit(0)
 
     ps = ProxyState()
+
+    if 't' in opts:
+        ps.tunnel = True
+    else:
+        ps.tunnel = False
 
     if 'v' in opts:
         ps.log.verbosity += 1

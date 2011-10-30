@@ -127,7 +127,10 @@ class ProxyHandler(SocketServer.StreamRequestHandler):
             res = self.doPOST(host, port, req)
             self.sendResponse(res)
         elif req.getMethod() == HTTPRequest.METHOD_CONNECT:
-            res = self.doCONNECT(host, port, req)
+            if proxystate.tunnel:
+                res = self.doCONNECT_RAW(host, port, req)
+            else:
+                res = self.doCONNECT(host, port, req)
 
     def _request(self, conn, method, path, params, headers):
         global proxystate
@@ -172,6 +175,42 @@ class ProxyHandler(SocketServer.StreamRequestHandler):
         data = res.serialize()
         return data
 
+    def doCONNECT_RAW(self, host, port, req):
+        global proxystate
+
+        socket_req = self.request
+        HTTPSRequest.sendAck(socket_req)
+
+        # connect to the target host
+        target_ssl = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        target_ssl.connect((host, port))
+
+        done = False
+        while not done:
+
+            # who is ready?
+            rr, ww, ee = select.select([socket_req, target_ssl], [], [])
+
+            dataC = ''
+            dataT = ''
+            
+            if socket_req in rr:
+                dataC = HTTPUtil.read(socket_req)
+                if len(dataC):
+                    target_ssl.send(dataC)
+            
+            if target_ssl in rr:
+                dataT = HTTPUtil.read(target_ssl)
+                if len(dataT):
+                    socket_req.send(dataT)
+
+            if ((len(dataC) == 0) and  (len(dataT) == 0)):
+                done = True
+                continue
+
+        target_ssl.close()
+        self.finish()
+        
     def doCONNECT(self, host, port, req):
         global proxystate
 
@@ -261,6 +300,7 @@ class ProxyState:
         self.plugin     = ProxyPlugin()
         self.listenport = port
         self.dumpfile   = None
+        self.tunnel     = False
 
         # Internal state
         self.log        = Logger()
