@@ -228,10 +228,11 @@ class HTTPRequest(HTTPMessage):
         else:
             r = urlparse.urlparse(self.url)
             port = r.port
-            if port is None and r.scheme != "https":
-                port = 80
-            else:
-                port = 443
+            if port is None:
+                if r.scheme != "https":
+                    port = 80
+                else:
+                    port = 443
                 
             host = r.hostname
 
