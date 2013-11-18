@@ -174,8 +174,8 @@ class HTTPMessage():
         """
         k = self.__findHeader(name, ignorecase)
         if k not in self.headers:
-            self.headers[k] = []
-        self.headers[k].append(value)
+            self.headers[name] = []
+        self.headers[name].append(value)
 
     def setHeader(self, name, value, ignorecase = True):
         """
